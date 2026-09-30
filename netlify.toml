@@ -1,0 +1,6 @@
+[build]
+  command = "python -m pip install -r build-requirements.txt && python build.py"
+  publish = "dist"
+
+[build.environment]
+  PYTHON_VERSION = "3.12"

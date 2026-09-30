@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Based Cyclone Compound Local Impact Prediction System</title>
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ops: {
+              950: '#070C18',
+              900: '#0B1120',
+              850: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569'
+            },
+            danger: {
+              DEFAULT: '#EF4444',
+              dark: '#991B1B'
+            },
+            warning: {
+              DEFAULT: '#F59E0B',
+              dark: '#92400E'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-ops-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-red-500/30 selection:text-red-200">
+
+  <!-- ================= TOP EMERGENCY ALERT TICKER ================= -->
+  <div class="bg-gradient-to-r from-red-900/90 via-red-800/90 to-amber-900/90 border-b border-red-500/30 text-white text-xs py-2 px-4 flex items-center justify-between overflow-hidden shadow-lg z-50">
+    <div class="flex items-center gap-2 flex-shrink-0 font-bold tracking-wider uppercase bg-red-600 px-2.5 py-0.5 rounded text-[11px] shadow-sm">
+      <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+      <i class="fa-solid fa-triangle-exclamation"></i> Track Status
+    </div>
+    
+    <div class="overflow-hidden relative flex-1 mx-4">
+      <div id="ticker-content" class="animate-marquee font-medium text-red-100">
+        <!-- Injected via JavaScript -->
+        No verified live cyclone-track or official warning feed is configured.
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 text-slate-300 text-[11px] flex-shrink-0">
+      <span class="hidden sm:inline-flex items-center gap-1"><i class="fa-solid fa-clock"></i> <span id="header-clock">--:--:-- IST</span></span>
+      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900/60 border border-slate-700 text-emerald-400 font-mono text-[10px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> FORECAST MODE
+      </span>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APP HEADER ================= -->
+  <header class="bg-ops-950/90 backdrop-blur border-b border-ops-700/50 sticky top-0 z-40 px-4 sm:px-6 lg:px-8 py-3.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 via-rose-600 to-amber-600 flex items-center justify-center text-white text-xl shadow-lg shadow-red-500/20 ring-2 ring-red-400/30 flex-shrink-0">
+          <i class="fa-solid fa-hurricane animate-spin" style="animation-duration: 8s;"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">
+              AI-Based Cyclone Compound Local Impact Prediction System
+            </h1>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 hidden sm:inline-block">
+              AI Operational Engine v2.4
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5 hidden sm:block">
+            Multi-hazard compound modeling synthesizing cyclone kinematics, storm surge, hydrological runoff & local vulnerability.
+          </p>
+        </div>
+      </div>
+
+      <!-- Header Quick Select & Global Snapshot -->
+      <div class="flex items-center gap-3 flex-wrap md:flex-nowrap">
+        
+        <!-- Search & Location Quick Dropdown -->
+        <div id="location-search-container" class="relative min-w-[220px] flex-1 sm:flex-initial">
+          <label for="location-select" class="sr-only">Search or enter a location</label>
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <i class="fa-solid fa-location-crosshairs text-xs"></i>
+          </div>
+          <input id="location-select" type="text" list="location-suggestions" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="location-search-results" placeholder="Search worldwide places" class="w-full pl-8 pr-8 py-2 bg-ops-850 hover:bg-ops-800 text-slate-100 text-xs font-semibold rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition shadow-inner">
+          <datalist id="location-suggestions">
+            <!-- Populated by JS -->
+          </datalist>
+          <div id="location-search-panel" class="hidden absolute top-full left-0 right-0 z-50 mt-1 overflow-hidden rounded-lg border border-ops-700 bg-ops-950 shadow-xl">
+            <p id="location-search-status" class="px-3 py-2 text-xs text-slate-400" role="status" aria-live="polite">Search worldwide places or choose a sample location.</p>
+            <ul id="location-search-results" class="max-h-72 overflow-y-auto" role="listbox"></ul>
+            <div class="border-t border-ops-700 px-3 py-1.5 text-[10px] text-slate-500">
+              Search by <a href="https://github.com/komoot/photon" target="_blank" rel="noreferrer" class="text-slate-400 hover:text-white">Photon</a>
+              · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" class="text-slate-400 hover:text-white">OpenStreetMap contributors</a>
+            </div>
+          </div>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-[10px]">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+        </div>
+
+        <!-- Quick Export / PDF Briefing -->
+        <button id="export-briefing-btn" class="px-3 py-2 bg-ops-800 hover:bg-ops-700 text-slate-200 border border-ops-600 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-file-arrow-down text-cyan-400"></i>
+          <span class="hidden lg:inline">Export Brief</span>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN DASHBOARD CONTAINER ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 1. ACTIVE CYCLONE OVERVIEW BANNER -->
+    <section aria-labelledby="cyclone-overview-heading" class="disaster-card rounded-2xl p-5 border-ops-700/60 relative overflow-hidden">
+      <!-- Background Ambient Glow -->
+      <div class="absolute -right-24 -bottom-24 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
+        
+        <!-- Left: Cyclone Identification -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="px-2.5 py-1 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 text-xs font-bold tracking-wide uppercase flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+              No Verified Track Feed
+            </span>
+            <span id="cyclone-category-badge" class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-semibold">
+              Unavailable
+            </span>
+            <span class="text-xs text-slate-400 font-mono" id="cyclone-last-updated">No official track source configured</span>
+          </div>
+
+          <h2 id="cyclone-overview-heading" class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <span id="cyclone-name">No verified live cyclone track</span>
+            <span class="text-xs font-normal text-slate-400 px-2 py-0.5 rounded bg-ops-800 border border-ops-700" id="cyclone-system-id">Track unavailable</span>
+          </h2>
+
+          <p class="text-sm text-slate-300 max-w-2xl" id="cyclone-status-summary">
+            Select a location to load a live weather forecast and modeled risk assessment.
+          </p>
+        </div>
+
+        <!-- Right: Real-time Cyclone Kinematic Telemetry -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-ops-950/80 p-3.5 rounded-xl border border-ops-700/70 text-center flex-shrink-0">
+          
+          <div class="p-2">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Max Sustained Wind</div>
+            <div class="text-xl sm:text-2xl font-black text-red-400 font-mono-data mt-1" id="cyclone-wind-speed">--</div>
+            <div class="text-[10px] text-slate-500 mt-0.5 font-mono">Gusts: <span id="cyclone-gust">--</span></div>
+          </div>
+
+          <div class="p-2 border-l border-ops-700/60">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">24h Peak Rain</div>
+            <div class="text-xl sm:text-2xl font-black text-cyan-400 font-mono-data mt-1" id="cyclone-rain-intensity">--</div>
+            <div class="text-[10px] text-slate-500 mt-0.5 font-mono">Rate: <span id="cyclone-rain-rate">--</span></div>
+          </div>
+
+          <div class="p-2 border-l border-ops-700/60">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Distance to Target</div>
+            <div class="text-xl sm:text-2xl font-black text-amber-400 font-mono-data mt-1" id="cyclone-distance">--</div>
+            <div class="text-[10px] text-slate-500 mt-0.5 font-mono">Bearing: <span id="cyclone-bearing">--</span></div>
+          </div>
+
+          <div class="p-2 border-l border-ops-700/60">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Est. Landfall</div>
+            <div class="text-xl sm:text-2xl font-black text-rose-400 font-mono-data mt-1" id="cyclone-landfall-eta">--</div>
+            <div class="text-[10px] text-slate-500 mt-0.5 font-mono">No track forecast available</div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. COMPOUND LOCAL IMPACT HERO & AI SYNTHESIS -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Primary Compound Score Gauge Card (5 cols) -->
+      <div class="lg:col-span-5 disaster-card rounded-2xl p-6 border-ops-700/80 flex flex-col justify-between relative overflow-hidden" id="compound-hero-card">
+        
+        <!-- Header -->
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt-lightning"></i> Compound Risk Engine
+            </div>
+            <h3 class="text-xl font-bold text-white mt-1" id="selected-loc-name">--</h3>
+            <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+              <span id="selected-loc-meta">Jagatsinghpur, Odisha</span>
+              <span>•</span>
+              <span class="font-mono" id="selected-loc-coords">20.26°N, 86.67°E</span>
+            </div>
+          </div>
+
+          <span id="compound-risk-level-badge" class="px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm">
+            UNASSESSED
+          </span>
+        </div>
+
+        <!-- Radial Gauge & Score Display -->
+        <div class="my-6 flex items-center justify-center gap-8 flex-wrap sm:flex-nowrap">
+          
+          <!-- SVG Circular Progress Meter -->
+          <div class="relative w-36 h-36 flex items-center justify-center flex-shrink-0">
+            <svg class="w-full h-full radial-progress-svg" viewBox="0 0 100 100">
+              <!-- Background Ring -->
+              <circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,0.08)" stroke-width="9" fill="transparent"/>
+              <!-- Dynamic Colored Progress Ring -->
+              <circle id="compound-gauge-circle" cx="50" cy="50" r="42" 
+                      stroke="#EF4444" 
+                      stroke-width="9" 
+                      stroke-linecap="round" 
+                      stroke-dasharray="264" 
+                      stroke-dashoffset="20" 
+                      fill="transparent"
+                      class="transition-all duration-1000 ease-out"/>
+            </svg>
+            <div class="absolute flex flex-col items-center justify-center text-center">
+              <span class="text-4xl font-black font-mono-data text-white" id="compound-score-display">--</span>
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Compound %</span>
+            </div>
+          </div>
+
+          <!-- Compound Key Impact Drivers -->
+          <div class="space-y-2 text-xs flex-1">
+            <div class="flex justify-between items-center py-1 border-b border-ops-700/50">
+              <span class="text-slate-400">Ground Elevation:</span>
+              <span class="font-semibold text-slate-200 font-mono" id="loc-elevation">--</span>
+            </div>
+            <div class="flex justify-between items-center py-1 border-b border-ops-700/50">
+              <span class="text-slate-400">Flood / Marine Signal:</span>
+              <span class="font-semibold text-red-400 font-mono" id="loc-surge">No observed flood depth data</span>
+            </div>
+            <div class="flex justify-between items-center py-1 border-b border-ops-700/50">
+              <span class="text-slate-400">Population Exposure:</span>
+              <span class="font-semibold text-slate-200" id="loc-pop-density">Unavailable</span>
+            </div>
+            <div class="flex justify-between items-center py-1">
+              <span class="text-slate-400">Evacuation Priority:</span>
+              <span class="font-bold text-red-400 uppercase" id="loc-evac-priority">No official directive</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- AI Diagnostic Rationale -->
+        <div class="bg-ops-950/90 rounded-xl p-3.5 border border-ops-700/80">
+          <div class="flex items-center gap-2 text-xs font-bold text-cyan-400 mb-1">
+            <i class="fa-solid fa-microchip-ai"></i> AI Compound Rationale & Synergy Synthesis:
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed italic" id="compound-ai-explanation">
+            No assessment has been run. Coordinate results are forecast-based screening estimates, not official warnings or observed flood levels.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Multi-Hazard Individual Breakdown & Forecast Curve (7 cols) -->
+      <div class="lg:col-span-7 disaster-card rounded-2xl p-6 border-ops-700/80 flex flex-col justify-between">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-ops-700/60">
+          <div>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-red-400"></i> Hazard Factor Attribution & Compound Timeline
+            </h3>
+            <p class="text-xs text-slate-400">Multi-criteria risk factors and selected-location forecast trend</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="tab-factors-btn" class="px-2.5 py-1 text-xs font-medium rounded-md bg-ops-700 text-white hover:bg-ops-600 transition">
+              Factor Weights
+            </button>
+            <button id="tab-timeline-btn" class="px-2.5 py-1 text-xs font-medium rounded-md bg-ops-850 text-slate-400 hover:text-white hover:bg-ops-800 transition">
+              48h Timeline
+            </button>
+          </div>
+        </div>
+
+        <!-- Chart Containers -->
+        <div class="h-64 my-2 relative">
+          <div id="chart-factors-container" class="w-full h-full">
+            <canvas id="breakdownChart"></canvas>
+          </div>
+          <div id="chart-timeline-container" class="w-full h-full hidden">
+            <canvas id="timelineChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Action Protocol Footer -->
+        <div class="bg-ops-950/70 p-3 rounded-xl border border-ops-700/60 mt-2">
+          <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+            <i class="fa-solid fa-shield-halved text-amber-400"></i> Recommended Field Operations Directive:
+          </div>
+          <ul id="recommended-actions-list" class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+            <!-- Populated via JS -->
+          </ul>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 3. INDIVIDUAL HAZARD RISK CARDS (4-Column Grid) -->
+    <section aria-labelledby="hazard-cards-heading">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 id="hazard-cards-heading" class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-cyan-400"></i> Disaggregated Hazard Risk Components
+          </h2>
+          <p class="text-xs text-slate-400">Isolated hazard vectors evaluated against local threshold criteria</p>
+        </div>
+        <span class="text-xs text-slate-400 font-mono">Location: <span id="card-sub-loc-name" class="text-slate-200 font-bold">Paradip</span></span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- CARD 1: WIND RISK -->
+        <div class="disaster-card rounded-xl p-4 border-ops-700/70 flex flex-col justify-between relative overflow-hidden group hover:border-red-500/50">
+          <div class="flex items-center justify-between">
+            <div class="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 text-base">
+              <i class="fa-solid fa-wind"></i>
+            </div>
+            <span id="wind-risk-level-badge" class="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-red-500/20 text-red-400 border border-red-500/30">
+              Not assessed
+            </span>
+          </div>
+
+          <div class="my-3">
+            <div class="text-xs text-slate-400 font-medium">Wind Risk Index</div>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span class="text-3xl font-black font-mono-data text-white" id="wind-risk-score">--</span>
+              <span class="text-xs text-slate-400">/ 100</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-ops-800 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div id="wind-risk-bar" class="bg-red-500 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-ops-700/50 font-mono">
+            <div class="flex justify-between"><span>Forecast wind:</span> <strong class="text-slate-200" id="wind-stat-speed">--</strong></div>
+            <div class="flex justify-between"><span>Forecast gust:</span> <strong class="text-slate-200" id="wind-stat-gust">--</strong></div>
+            <div class="flex justify-between"><span>Source:</span> <strong class="text-slate-200">Weather forecast</strong></div>
+          </div>
+        </div>
+
+        <!-- CARD 2: RAINFALL RISK -->
+        <div class="disaster-card rounded-xl p-4 border-ops-700/70 flex flex-col justify-between relative overflow-hidden group hover:border-cyan-500/50">
+          <div class="flex items-center justify-between">
+            <div class="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-base">
+              <i class="fa-solid fa-cloud-showers-heavy"></i>
+            </div>
+            <span id="rain-risk-level-badge" class="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              Not assessed
+            </span>
+          </div>
+
+          <div class="my-3">
+            <div class="text-xs text-slate-400 font-medium">Rainfall Risk Index</div>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span class="text-3xl font-black font-mono-data text-white" id="rain-risk-score">--</span>
+              <span class="text-xs text-slate-400">/ 100</span>
+            </div>
+
+            <div class="w-full bg-ops-800 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div id="rain-risk-bar" class="bg-cyan-500 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-ops-700/50 font-mono">
+            <div class="flex justify-between"><span>Forecast 24h rain:</span> <strong class="text-slate-200" id="rain-stat-accum">--</strong></div>
+            <div class="flex justify-between"><span>Average rate:</span> <strong class="text-slate-200" id="rain-stat-rate">--</strong></div>
+            <div class="flex justify-between"><span>Source:</span> <strong class="text-slate-200">Weather forecast</strong></div>
+          </div>
+        </div>
+
+        <!-- CARD 3: FLOOD RISK -->
+        <div class="disaster-card rounded-xl p-4 border-ops-700/70 flex flex-col justify-between relative overflow-hidden group hover:border-amber-500/50">
+          <div class="flex items-center justify-between">
+            <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-base">
+              <i class="fa-solid fa-water"></i>
+            </div>
+            <span id="flood-risk-level-badge" class="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Not assessed
+            </span>
+          </div>
+
+          <div class="my-3">
+            <div class="text-xs text-slate-400 font-medium">Flood Risk Model Estimate</div>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span class="text-3xl font-black font-mono-data text-white" id="flood-risk-score">--</span>
+              <span class="text-xs text-slate-400">/ 100</span>
+            </div>
+
+            <div class="w-full bg-ops-800 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div id="flood-risk-bar" class="bg-amber-500 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-ops-700/50 font-mono">
+            <div class="flex justify-between"><span>Forecast wave height:</span> <strong class="text-slate-200" id="flood-stat-surge">--</strong></div>
+            <div class="flex justify-between"><span>Sea level (MSL):</span> <strong class="text-slate-200" id="flood-stat-tide">--</strong></div>
+            <div class="flex justify-between"><span>Interpretation:</span> <strong class="text-slate-200">Not observed flood depth</strong></div>
+          </div>
+        </div>
+
+        <!-- CARD 4: LOCAL VULNERABILITY -->
+        <div class="disaster-card rounded-xl p-4 border-ops-700/70 flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/50">
+          <div class="flex items-center justify-between">
+            <div class="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-base">
+              <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <span id="vuln-risk-level-badge" class="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              Not assessed
+            </span>
+          </div>
+
+          <div class="my-3">
+            <div class="text-xs text-slate-400 font-medium">Vulnerability Index</div>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span class="text-3xl font-black font-mono-data text-white" id="vuln-risk-score">--</span>
+              <span class="text-xs text-slate-400">/ 100</span>
+            </div>
+
+            <div class="w-full bg-ops-800 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div id="vuln-risk-bar" class="bg-purple-500 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 pt-2 border-t border-ops-700/50 font-mono">
+            <div class="flex justify-between"><span>Shelter data:</span> <strong class="text-slate-200" id="vuln-stat-shelter">Unavailable</strong></div>
+            <div class="flex justify-between"><span>Population data:</span> <strong class="text-slate-200" id="vuln-stat-density">Unavailable</strong></div>
+            <div class="flex justify-between"><span>Basis:</span> <strong class="text-slate-200">Elevation proxy</strong></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. INTERACTIVE GEOSPATIAL RISK MAP SECTION -->
+    <section aria-labelledby="map-section-heading" class="disaster-card rounded-2xl p-5 border-ops-700/70">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-ops-700/60">
+        <div>
+          <h2 id="map-section-heading" class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-map-location-dot text-rose-500"></i> Geospatial Multi-Hazard Impact Map
+          </h2>
+          <p class="text-xs text-slate-400">Interactive live radar tracks, wind radius buffers, and location-wise compound risk points</p>
+        </div>
+
+        <!-- Map Legend Badges -->
+        <div class="flex items-center gap-3 text-[11px] flex-wrap">
+          <div class="flex items-center gap-1.5 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Very High (&ge;85)</div>
+          <div class="flex items-center gap-1.5 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> High (70-84)</div>
+          <div class="flex items-center gap-1.5 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span> Moderate (40-69)</div>
+          <div class="flex items-center gap-1.5 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Low (&lt;40)</div>
+        </div>
+      </div>
+
+      <!-- Map Container -->
+      <div class="relative w-full h-[450px] rounded-xl overflow-hidden mt-4 border border-ops-700">
+        <div id="riskMap" class="w-full h-full z-10"></div>
+        
+        <!-- Interactive Overlay Floating Card -->
+        <div class="absolute top-4 left-4 z-20 bg-ops-950/90 backdrop-blur-md p-3 rounded-lg border border-ops-700 shadow-xl max-w-xs text-xs space-y-1.5 hidden sm:block">
+          <div class="font-bold text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-satellite-dish text-red-400"></i> Live Radar Track Overlay
+          </div>
+          <div class="text-[11px] text-slate-400 leading-snug">
+            Click any station marker to sync dashboard analytics and AI rationale. Outer rings illustrate 34kt, 50kt, and 64kt destructive wind thresholds.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. LOCATION-WISE RISK TABLE & SEARCH / FILTER SECTION -->
+    <section aria-labelledby="table-section-heading" class="disaster-card rounded-2xl p-5 border-ops-700/70 space-y-4">
+      
+      <!-- Table Header & Controls -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-3 border-b border-ops-700/60">
+        <div>
+          <h2 id="table-section-heading" class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-amber-400"></i> Location-Wise Compound Risk Matrix
+          </h2>
+          <p class="text-xs text-slate-400">Granular comparative breakdown across monitored coastal & inland sectors</p>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+          
+          <!-- Text Search Filter -->
+          <div class="relative min-w-[180px]">
+            <input type="text" id="table-search-input" placeholder="Search location, district..." 
+                   class="w-full pl-8 pr-3 py-1.5 bg-ops-950 text-slate-100 text-xs rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent placeholder-slate-500">
+            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+          </div>
+
+          <!-- Risk Category Filter -->
+          <select id="table-category-filter" class="py-1.5 px-3 bg-ops-950 text-slate-200 text-xs rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
+            <option value="ALL">All Risk Levels</option>
+            <option value="Very High">Very High (&ge;85)</option>
+            <option value="High">High (70-84)</option>
+            <option value="Moderate">Moderate (40-69)</option>
+            <option value="Low">Low (&lt;40)</option>
+          </select>
+
+        </div>
+      </div>
+
+      <!-- Responsive Table -->
+      <div class="overflow-x-auto rounded-xl border border-ops-700/80">
+        <table class="w-full text-left text-xs text-slate-300 divide-y divide-ops-700/70">
+          <thead class="bg-ops-950 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
+            <tr>
+              <th scope="col" class="py-3 px-4">Location / Sector</th>
+              <th scope="col" class="py-3 px-3 text-center">Dist (Eye)</th>
+              <th scope="col" class="py-3 px-3 text-center">Elev.</th>
+              <th scope="col" class="py-3 px-3 text-center">Wind Risk</th>
+              <th scope="col" class="py-3 px-3 text-center">Rain Risk</th>
+              <th scope="col" class="py-3 px-3 text-center">Flood Risk</th>
+              <th scope="col" class="py-3 px-3 text-center">Compound Score</th>
+              <th scope="col" class="py-3 px-3 text-center">Risk Level</th>
+              <th scope="col" class="py-3 px-4 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="risk-table-body" class="divide-y divide-ops-800 bg-ops-900/50">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <!-- 6. WHAT-IF COMPOUND RISK SIMULATION STUDIO (Interactive Value Testing) -->
+    <section class="disaster-card rounded-2xl p-5 border-ops-700/70 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-ops-700/60">
+        <div>
+          <h2 class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-purple-400"></i> What-If Compound Scenario Simulation Studio
+          </h2>
+          <p class="text-xs text-slate-400">Dynamically stress-test parameters to evaluate how compound factors affect local risk score</p>
+        </div>
+        <button id="reset-sim-btn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md bg-ops-800 hover:bg-ops-700 text-slate-300 border border-ops-600 transition">
+          <i class="fa-solid fa-rotate-left"></i> Reset to Monitored Station
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+        <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="text-xs font-semibold text-slate-300">Wind Speed (km/h)
+            <input id="sim-wind-input" type="number" min="0" max="300" step="any" value="110" required class="mt-1 w-full px-3 py-2 bg-ops-950 text-slate-100 rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+          </label>
+          <label class="text-xs font-semibold text-slate-300">24h Rainfall (mm)
+            <input id="sim-rain-input" type="number" min="0" max="500" step="any" value="180" required class="mt-1 w-full px-3 py-2 bg-ops-950 text-slate-100 rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+          </label>
+          <label class="text-xs font-semibold text-slate-300">Cyclone Distance (km)
+            <input id="sim-distance-input" type="number" min="0" max="2000" step="any" value="80" required class="mt-1 w-full px-3 py-2 bg-ops-950 text-slate-100 rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          </label>
+          <label class="text-xs font-semibold text-slate-300">Flood Vulnerability (0-100)
+            <input id="sim-flood-input" type="number" min="0" max="100" step="any" value="80" required class="mt-1 w-full px-3 py-2 bg-ops-950 text-slate-100 rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+          </label>
+          <label class="text-xs font-semibold text-slate-300">Elevation Risk (0-100)
+            <input id="sim-elevation-input" type="number" min="0" max="100" step="any" value="70" required class="mt-1 w-full px-3 py-2 bg-ops-950 text-slate-100 rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          </label>
+          <label class="text-xs font-semibold text-slate-300">Population Vulnerability (0-100)
+            <input id="sim-population-input" type="number" min="0" max="100" step="any" value="75" required class="mt-1 w-full px-3 py-2 bg-ops-950 text-slate-100 rounded-lg border border-ops-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+          </label>
+        </div>
+
+        <!-- Simulation Result Output Box -->
+        <div class="bg-ops-950 p-4 rounded-xl border border-ops-700 flex flex-col justify-between gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Compound Outcome</span>
+            <span id="sim-result-badge" class="px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase bg-ops-800 text-slate-300 border border-ops-600">
+              Awaiting Analysis
+            </span>
+          </div>
+
+          <div class="flex items-baseline gap-3">
+            <span class="text-4xl font-black font-mono-data text-white" id="sim-result-score">--</span>
+            <span class="text-xs text-slate-400">/ 100 Compound Score</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-400">
+            <span>Wind Risk</span><strong id="sim-wind-risk" class="text-slate-200 text-right">--</strong>
+            <span>Rainfall Risk</span><strong id="sim-rain-risk" class="text-slate-200 text-right">--</strong>
+            <span>Flood Risk</span><strong id="sim-flood-risk" class="text-slate-200 text-right">--</strong>
+            <span>Local Vulnerability</span><strong id="sim-vulnerability-risk" class="text-slate-200 text-right">--</strong>
+          </div>
+
+          <p class="text-[11px] text-slate-400" id="sim-result-text" role="status" aria-live="polite">
+            Enter scenario values and analyze to request a backend prediction.
+          </p>
+          <p class="text-[10px] text-slate-500" id="sim-result-source"></p>
+          <button id="sim-analyze-btn" type="button" class="px-3 py-2 bg-red-600 hover:bg-red-500 disabled:bg-ops-700 disabled:text-slate-400 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-bolt"></i> Analyze Scenario
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 7. OFFICIAL ALERT AND LOCAL RESOURCE STATUS -->
+    <section aria-labelledby="advisories-section-heading" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Critical Bulletins (2 cols) -->
+      <div class="lg:col-span-2 disaster-card rounded-2xl p-5 border-ops-700/70 space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-ops-700/60">
+          <h2 id="advisories-section-heading" class="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn text-red-400"></i> Official Alerts
+          </h2>
+          <span class="text-xs text-slate-400 font-mono">No feed connected</span>
+        </div>
+
+        <div id="advisories-container" class="space-y-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Emergency Contacts & Shelter Readiness (1 col) -->
+      <div class="disaster-card rounded-2xl p-5 border-ops-700/70 space-y-4 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-2 border-b border-ops-700/60">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-hospital text-emerald-400"></i> Local Resource Data
+            </h3>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-300">Unavailable</span>
+          </div>
+
+          <div class="space-y-3 text-xs mt-3">
+            <p class="text-xs text-slate-400">No verified local shelter inventory, response deployment, or jurisdiction-specific emergency contact feed is connected. Consult local emergency management authorities.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-ops-950 border-t border-ops-800 text-slate-400 text-xs py-5 mt-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved text-red-500"></i>
+        <span>AI-Based Cyclone Compound Local Impact Prediction System &bull; Prototype Edition</span>
+      </div>
+      <div class="text-slate-500 text-[11px]">
+        Designed for Compound Multi-Hazard Early Warning & Emergency Decision Support
+      </div>
+    </div>
+  </footer>
+
+  <!-- App Main Scripts (ES Modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

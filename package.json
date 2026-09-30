@@ -1,0 +1,29 @@
+{
+  "name": "cyclone-impact-predictor",
+  "version": "1.0.0",
+  "description": "AI-Based Cyclone Compound Local Impact Prediction System with Python Flask Backend and React Frontend",
+  "main": "app.py",
+  "scripts": {
+    "start": "concurrently -k -n \"BACKEND,FRONTEND\" -c \"cyan.bold,magenta.bold\" \"npm run backend\" \"npm run frontend\"",
+    "dev": "concurrently -k -n \"BACKEND,FRONTEND\" -c \"cyan.bold,magenta.bold\" \"npm run backend\" \"npm run frontend\"",
+    "backend": "python app.py",
+    "frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "frontend:install": "npm install --prefix frontend",
+    "install:all": "npm install && npm run frontend:install"
+  },
+  "keywords": [
+    "cyclone",
+    "disaster-management",
+    "risk-prediction",
+    "react",
+    "flask",
+    "vite",
+    "compound-hazard"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

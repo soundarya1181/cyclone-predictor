@@ -1,0 +1,156 @@
+/**
+ * Interactive Analytics & Forecast Charts Component using Chart.js
+ */
+
+export class RiskCharts {
+  constructor(breakdownCanvasId, timelineCanvasId) {
+    this.breakdownCanvasId = breakdownCanvasId;
+    this.timelineCanvasId = timelineCanvasId;
+    this.breakdownChart = null;
+    this.timelineChart = null;
+  }
+
+  renderBreakdown(locationData) {
+    const ctx = document.getElementById(this.breakdownCanvasId);
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (this.breakdownChart) {
+      this.breakdownChart.destroy();
+    }
+
+    const dataValues = [
+      locationData.windRiskScore,
+      locationData.rainRiskScore,
+      locationData.floodRiskScore,
+      locationData.vulnerabilityScore
+    ];
+
+    const backgroundColors = dataValues.map(v => {
+      if (v >= 85) return 'rgba(239, 68, 68, 0.85)';
+      if (v >= 70) return 'rgba(245, 158, 11, 0.85)';
+      if (v >= 40) return 'rgba(234, 179, 8, 0.85)';
+      return 'rgba(16, 185, 129, 0.85)';
+    });
+
+    this.breakdownChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Wind Risk', 'Rainfall Risk', 'Flood Risk Estimate', 'Elevation Proxy'],
+        datasets: [{
+          label: 'Risk Contribution Index (0 - 100)',
+          data: dataValues,
+          backgroundColor: backgroundColors,
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: 'rgba(255, 255, 255, 0.15)'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => ` Risk Score: ${context.raw} / 100`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94A3B8', font: { size: 11, family: 'Inter, sans-serif' } }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            grid: { color: 'rgba(255, 255, 255, 0.06)' },
+            ticks: { color: '#94A3B8', stepSize: 25, font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+
+  renderTimeline(timelineData) {
+    const ctx = document.getElementById(this.timelineCanvasId);
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    if (this.timelineChart) {
+      this.timelineChart.destroy();
+    }
+
+    const labels = timelineData.map(d => d.time);
+    const compoundRisk = timelineData.map(d => d.compoundRisk);
+    const windValues = timelineData.map(d => d.windKmh);
+
+    this.timelineChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Compound Risk Score (%)',
+            data: compoundRisk,
+            borderColor: '#EF4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#EF4444',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Forecast Wind Max (km/h)',
+            data: windValues,
+            borderColor: '#38BDF8',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.3,
+            pointRadius: 3,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#CBD5E1', font: { size: 11, family: 'Inter, sans-serif' }, boxWidth: 12 }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#94A3B8', font: { size: 10 } }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            position: 'left',
+            grid: { color: 'rgba(255, 255, 255, 0.06)' },
+            ticks: { color: '#EF4444', font: { size: 10 } },
+            title: { display: true, text: 'Compound Risk %', color: '#EF4444', font: { size: 10 } }
+          },
+          y1: {
+            min: 0,
+            max: 220,
+            position: 'right',
+            grid: { display: false },
+            ticks: { color: '#38BDF8', font: { size: 10 } },
+            title: { display: true, text: 'Wind Speed (km/h)', color: '#38BDF8', font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+}
