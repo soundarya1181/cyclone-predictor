@@ -39,10 +39,16 @@ cyclone-impact-predictor/
 
 The application is built using standard ES Modules, Tailwind CSS, Leaflet, and Chart.js. It requires zero compilation or node package build steps.
 
-### Option 1: Using Python HTTP Server (Recommended)
+###server only: Using Python HTTP Server only (Recommended)
 Open PowerShell or your terminal in this directory:
 ```powershell
-python -m http.server 8080
+python -m http.server 5000
+```
+
+###Run All backend and frontend by concurrently: (Recommended)
+Open PowerShell or your terminal in this directory:
+```powershell
+npm run dev
 ```
 Then open your browser to:
 [http://localhost:8080](http://localhost:8080)
