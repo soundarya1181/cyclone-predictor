@@ -35,7 +35,7 @@ cyclone-impact-predictor/
 
 ---
 
-## 🚀 How to Run the Frontend
+## 🚀 How to Run the Frontend & backend
 
 The application is built using standard ES Modules, Tailwind CSS, Leaflet, and Chart.js. It requires zero compilation or node package build steps.
 
@@ -51,7 +51,7 @@ Open PowerShell or your terminal in this directory:
 npm run dev
 ```
 Then open your browser to:
-[http://localhost:8080](http://localhost:8080)
+[http://localhost:5173](http://localhost:5173)
 
 ### Option 2: Using VS Code / Cursor "Live Server" Extension
 1. Open the folder `C:\Users\sound\.gemini\antigravity\scratch\cyclone-impact-predictor` in your IDE.
